@@ -1,8 +1,16 @@
-term-vocab
-==========
-
-This terminal app helps you learns new words. 
-
-Currently, it retrieves the list of words from your GoldenDict history, and prints its meaning and example usage in your shell. You can invoke this app everytime you open a new shell session.
+wonder-word
+===========
+Preparing for GRE and TOEFL? Or maybe you just are a vocabulary NERD? Then, here is a wonderful tool at your disposal. 
 
 
+Installation
+------------
+Install it using the following command:
+
+    sudo -H pip install https://github.com/shraddha-hna/wonder-word
+
+Then, fire up the following command and see the "wonder":
+
+    ww
+
+Currently, it's not available in python PIP. I will soon upload it there too.
