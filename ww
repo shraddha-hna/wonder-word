@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+'''
+A script to utilize Google "define" to extract meanings.
+This script doesn't utilize any API and uses raw BeautifulSoup method.
+Hence, no API account/keys needed :)
+ENJOY :)
+((2017-06-21))
+Now, we're caching data offline, for quried words, so that we don't have to
+query Google again and again. Cache is being saved as Pickle :)
+'''
+
+from bs4 import BeautifulSoup
+import platform
+import pickle
+import os
+import requests
+import sys
+import random
+from colorama import init, Fore, Back, Style
+init(strip=not sys.stdout.isatty()) # strip colors if stdout is redirected
+from termcolor import cprint
+from pyfiglet import figlet_format
+import subprocess
+import plistlib
+from DictionaryServices import *
+
+#Important Vars
+gdFile = os.path.expanduser("~") + "/.goldendict/history"
+savedwords = "/Users/shivam/Library/Containers/com.apple.Dictionary/Data/Library/Application Support/BetterDictionary/saved-words.plist" 
+wordListFile = os.path.expanduser("~") + "/.mywords"
+#In this cache file, we save the meanings retrieved from Google
+#so that we don't have to query Google everytime
+dictCacheFile = os.path.expanduser("~") + "/.mywordMeanings"
+
+
+def dictMac(word):
+    """
+    Fetch meaning from the default OSX Dictionary
+    """
+    try:
+        searchword = word.decode('utf-8')
+    except IndexError:
+        errmsg = 'You did not enter any terms to look up in the Dictionary.'
+        print errmsg
+        sys.exit()
+    wordrange = (0, len(searchword))
+    dictresult = DCSCopyTextDefinition(None, searchword, wordrange)
+    if not dictresult:
+        errmsg = "'%s' not found in Dictionary." % (searchword)
+        print errmsg.encode('utf-8')
+    else:
+        s = dictresult.encode("utf-8")    
+        arrow = doColor("\n\n\xe2\x96\xb6 ", "red")            
+        s = s.replace('\xe2\x96\xb6', arrow)  # arrow
+        
+        bullet = doColor("\n\xe2\x80\xa2 ", "red")    
+        s = s.replace('\xe2\x80\xa2', bullet)    # bullet
+        
+        phrases_header = doColor("\n\nPHRASES\n", "important")
+        s = s.replace('PHRASES', phrases_header)
+        
+        derivatives_header = doColor("\n\nDERIVATIVES\n", "important")
+        s = s.replace('DERIVATIVES', derivatives_header)
+        
+        origin_header = doColor("\n\nORIGIN\n", "important")
+        s = s.replace('ORIGIN', origin_header)
+        
+        print doColor("Dictionary entry for:\n", "red")
+        print s
+        print "\n---------------------------------"
+
+
+def doColor(s, style=None):
+    """
+    util for returning a colored string
+    if colorama is not installed, FAIL SILENTLY
+    """
+    try:
+        if style == "comment":
+            s = Style.DIM + s + Style.RESET_ALL
+        elif style == "important":
+            s = Style.BRIGHT + s + Style.RESET_ALL
+        elif style == "normal":
+            s = Style.RESET_ALL + s + Style.RESET_ALL    
+        elif style == "red":
+            s = Fore.RED + s + Style.RESET_ALL    
+        elif style == "green":
+            s = Fore.GREEN + s + Style.RESET_ALL            
+    except: 
+        pass
+    return s
+
+
+def parse_html(html):
+    '''
+    Finally, print.
+    '''
+    #Extract terminal column width
+    columns = int(os.popen('stty size', 'r').read().split()[1])
+
+    final_soup = BeautifulSoup(html,"html5lib")
+    everyThing = final_soup.select("div._Jig")
+    for line in everyThing[:3]: #Show only the first 3 definitions
+        print "#" * int(columns)
+        for i in line:
+            print "-->",
+            print i.text
+
+
+if __name__ == '__main__':
+    try:
+        if sys.argv[1] == 'e' or sys.argv[1] == 'edit':
+            print "Gonna close goldendict and open up the files for you."
+            # subprocess.call("pgrep goldendict | xargs kill", shell=True)
+            subprocess.call(["vim", "-p", wordListFile, savedwords])
+        elif sys.argv[1] == 'a' or sys.argv[1] == 'add':
+            word = sys.argv[2]
+            with open(wordListFile, 'a') as f:
+                f.write("\n"+word)
+            print("Word {} succesfully added to list file.".format(word))
+        elif sys.argv[1] == 'd' or sys.argv[1] == 'download':
+            print "Enter the url of list from vocabulary.com to get it downloaded"
+            url = raw_input("Please enter something")
+            response = requests.get(url, headers = {"user-agent":"Mozilla/5.0(Macintosh; Intel Mac OS X 10.12; rv:49.0) Gecko/20100101 Firefox/49.0"})
+            final_soup = BeautifulSoup(response.content,"html5lib")
+            everyThing = final_soup.select("ol.wordlist .dynamictext")
+            with open(wordListFile, 'a') as f:
+                for line in everyThing:
+                    f.write("\n"+line.text)
+        else:
+            print "Can't understand the argument. Quitting."
+    except:
+        #Reading and writing from Dictionary(in mac) or Golden Dict (in linux) and our peronal word list
+        if (platform.system() == 'Darwin'): #For mac
+            dictList = plistlib.readPlist(savedwords) #Reading from bookmark list of Dictionary in Mac
+            dictWords = [x for x in dictList] #Dict_words
+        else:
+            gLines = open(gdFile).read().splitlines() #Reading from Golden Dict in linux
+            gLines = [x for x in gLines if len(x.split()) == 2] #Discarding spurious entries
+            dictWords = [x.split()[1] for x in gLines] #GoldenDict Words
+                    
+
+        try:
+            myWords = open(wordListFile).read().splitlines() #My personal list
+        except:
+            myWords = []
+        allWords = list(set(dictWords)|set(myWords)) #Both lists combined
+        #Finally, saving all words' list to my words list
+        with open(wordListFile, 'w') as f:
+            f.write("\n".join(allWords))
+
+        #Choosing a random word and printing it as ASCII art
+        word = random.choice(allWords)
+        # print asciiart(word)
+        cprint(figlet_format(word))
+        
+        #Printing word meaning from existing dictionary if system is mac otherwise check word in wordMeanings file and if not present there then query on google 
+        if (platform.system() == 'Darwin'):
+            dictMac(word)
+        else:
+            #Try loading wordMeanings cache file
+            try:
+                with open(dictCacheFile, 'rb') as f:
+                    wordMeanings = pickle.load(f)
+            except:
+                wordMeanings = {}
+
+            if word in wordMeanings:
+                parse_html(wordMeanings[word])
+            else:
+                print "Querying Google"
+                url = 'https://www.google.co.in/search?q=define%20' + word + '#cns=1'
+                response = requests.get(url, headers={"user-agent":"Mozilla/5.0(Macintosh; Intel Mac OS X 10.12; rv:49.0) Gecko/20100101 Firefox/49.0"})
+                parse_html(response.content)
+                wordMeanings[word] = response.content 
+                with open(dictCacheFile, 'wb') as f:
+                    pickle.dump(wordMeanings, f)
