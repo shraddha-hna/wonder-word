@@ -12,7 +12,7 @@ Installation
 ------------
 Install it using the following command:
 
-    sudo -H pip install https://github.com/shraddha-hna/wonder-word
+    sudo -H pip install https://github.com/shraddha-hna/wonder-word/zipball/master
 
 Then, fire up the following command and see the "wonder":
 
