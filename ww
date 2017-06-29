@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 '''
-A script to utilize Google "define" to extract meanings.
-This script doesn't utilize any API and uses raw BeautifulSoup method.
-Hence, no API account/keys needed :)
-ENJOY :)
-((2017-06-21))
-Now, we're caching data offline, for quried words, so that we don't have to
-query Google again and again. Cache is being saved as Pickle :)
+ww : wonder-word
+THE terminal app to train your vocabulary.
 '''
 
 from bs4 import BeautifulSoup
@@ -22,11 +17,12 @@ from termcolor import cprint
 from pyfiglet import figlet_format
 import subprocess
 import plistlib
-from DictionaryServices import *
+if sys.platform.startswith('darwin'):
+        from DictionaryServices import *
 
 #Important Vars
 gdFile = os.path.expanduser("~") + "/.goldendict/history"
-savedwords = "/Users/shivam/Library/Containers/com.apple.Dictionary/Data/Library/Application Support/BetterDictionary/saved-words.plist" 
+savedwords = os.path.expanduser("~") + "/Library/Containers/com.apple.Dictionary/Data/Library/Application Support/BetterDictionary/saved-words.plist" 
 wordListFile = os.path.expanduser("~") + "/.mywords"
 #In this cache file, we save the meanings retrieved from Google
 #so that we don't have to query Google everytime
