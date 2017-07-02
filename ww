@@ -130,6 +130,14 @@ if __name__ == '__main__':
         if (platform.system() == 'Darwin'): #For mac
             dictList = plistlib.readPlist(savedwords) #Reading from bookmark list of Dictionary in Mac
             dictWords = [x for x in dictList] #Dict_words
+            if not dictWords:
+                url = "https://www.vocabulary.com/lists/285563"
+                response = requests.get(url, headers = {"user-agent":"Mozilla/5.0(Macintosh; Intel Mac OS X 10.12; rv:49.0) Gecko/20100101 Firefox/49.0"})
+                final_soup = BeautifulSoup(response.content,"html5lib")
+                everyThing = final_soup.select("ol.wordlist .dynamictext")
+                with open(dictWords, 'a') as f:
+                    for line in everyThing:
+                        f.write("\n"+line.text)
         else:
             gLines = open(gdFile).read().splitlines() #Reading from Golden Dict in linux
             gLines = [x for x in gLines if len(x.split()) == 2] #Discarding spurious entries
